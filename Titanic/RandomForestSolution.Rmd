@@ -1,0 +1,30 @@
+---
+title: "Titanic Exploration Using Random Forests"
+author: "Alex Perusse"
+output:
+  html_document:
+    toc: TRUE
+---
+
+```{r Packages, message=FALSE, warning=FALSE}
+library(dplyr) # Data manipulation
+
+library(ggthemes)
+library(ggplot2)
+
+library(mice)
+
+library(randomForest)
+```
+
+```{r Load Data}
+
+train <- read.csv("~/GitHub/kaggle-solutions/Titanic/train.csv")
+test <- read.csv("~/GitHub/kaggle-solutions/Titanic/test.csv")
+full <- bind_rows(train, test) #dplyr version of rbind.  
+```
+
+# Data Exploration ----
+In this first model, I am just trying to get the swing of everything.  I will use naive feature, i.e. no calculated features, beyond the normal transformations which will make building the model possible in the first place.  I will explore more complex features in the futures.
+
+
