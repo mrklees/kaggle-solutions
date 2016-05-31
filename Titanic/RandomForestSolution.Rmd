@@ -21,10 +21,32 @@ library(randomForest)
 
 train <- read.csv("~/GitHub/kaggle-solutions/Titanic/train.csv")
 test <- read.csv("~/GitHub/kaggle-solutions/Titanic/test.csv")
-full <- bind_rows(train, test) #dplyr version of rbind.  
+
 ```
 
 # Data Exploration ----
-In this first model, I am just trying to get the swing of everything.  I will use naive feature, i.e. no calculated features, beyond the normal transformations which will make building the model possible in the first place.  I will explore more complex features in the futures.
+To start, I wanted to think about what might be some good independent fields to include.  Gender seemed like a good place to start.
 
+```{r Gender Survival}
+Sex_Survival <- train %>%
+  group_by(Sex) %>%
+  summarise(count = n(),
+            survived = sum(Survived),
+            died = count - survived,
+            survival_rate = survived/n())
 
+mosaicplot(table(train$Sex,train$Survived), main = 'Gender vs. Survival', sub = '0 = Survived and 1 = Died')
+```
+Might just be me, but I think Gender might be a good feature for us.
+We'll look at Age next.
+
+```{r Survival by Age}
+Age_Survival <- train %>%
+  group_by(Age) %>%
+  summarise(survived = sum(Survived)/n())
+buckets <- ntile(Age_Survival$Age,4)
+Age_Survival <- bind_cols(Age_Survival,buckets)
+
+ggplot(Age_Survival, aes(x = Age, y = survived)) +
+  geom_point()
+```
