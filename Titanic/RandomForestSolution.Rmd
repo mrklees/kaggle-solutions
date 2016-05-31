@@ -24,7 +24,7 @@ test <- read.csv("~/GitHub/kaggle-solutions/Titanic/test.csv")
 
 ```
 
-# Data Exploration ----
+# Data Exploration
 To start, I wanted to think about what might be some good independent fields to include.  Gender seemed like a good place to start.
 
 ```{r Gender Survival}
@@ -44,8 +44,8 @@ We'll look at Age next.
 Age_Survival <- train %>%
   group_by(Age) %>%
   summarise(survived = sum(Survived)/n())
-buckets <- ntile(Age_Survival$Age,4)
-Age_Survival <- bind_cols(Age_Survival,buckets)
+#buckets <- ntile(Age_Survival$Age,4)
+#Age_Survival <- bind_cols(Age_Survival,buckets)
 
 ggplot(Age_Survival, aes(x = Age, y = survived)) +
   geom_point()
