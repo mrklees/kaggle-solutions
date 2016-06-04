@@ -9,19 +9,18 @@ output:
 ```{r Packages, message=FALSE, warning=FALSE}
 library(dplyr) # Data manipulation
 
-library(ggthemes)
+library(ggthemes) #Plots
 library(ggplot2)
 
-library(mice)
+library(mice) #Filling in missing data
 
-library(randomForest)
+library(randomForest) #Random Forest Classification Model
 ```
 
 ```{r Load Data}
-
-train <- read.csv("~/GitHub/kaggle-solutions/Titanic/train.csv")
-test <- read.csv("~/GitHub/kaggle-solutions/Titanic/test.csv")
-
+setwd("C:/Users/Alexander/OneDrive/GitHub/kaggle-solutions/Titanic")
+train <- read.csv("train.csv")
+test <- read.csv("test.csv")
 ```
 
 # Data Exploration
@@ -55,7 +54,7 @@ ggplot(train, aes(x = Age, y = Survived)) +
   geom_count()
 
 ggplot(Age_Survival, aes(x = Age, y = survived)) +
-  geom_bar(stat = "identity")
+  geom_line()
 ```
 
 # Feature Engineering
@@ -63,7 +62,10 @@ I will go ahead and perform some center-scaling. There is some missing data as w
 
 ```{r Family Size}
 train <- train %>%
-  mutate(Family_Size = )
+  mutate(Family_Size = SibSp + Parch)
+
+test <- test %>%
+  mutate(Family_Size = SibSp + Parch)
 ```
 
 ```{r Fill holes in data}
