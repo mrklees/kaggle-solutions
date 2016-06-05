@@ -56,25 +56,54 @@ ggplot(train, aes(x = Age, y = Survived)) +
 ggplot(Age_Survival, aes(x = Age, y = survived)) +
   geom_line()
 ```
+The last features I would like to look at are Pclass and Fare, which are probably colinear.   
+```{r Survival by Fare}
+mosaicplot(table(train$Pclass, train$Survived))
 
+ggplot(train, aes(x = Fare, y = Survived)) + 
+  geom_count()
+```
 # Feature Engineering
 I will go ahead and perform some center-scaling. There is some missing data as well that I will use mice to fill.
 
 ```{r Family Size}
 train <- train %>%
-  mutate(Family_Size = SibSp + Parch)
+  mutate(Family_Size = SibSp + Parch + 1)
 
 test <- test %>%
   mutate(Family_Size = SibSp + Parch)
+
+ggplot(train, aes(x = Family_Size, fill = factor(Survived))) +
+  geom_bar(stat='count', position='dodge') +
+  scale_x_continuous(breaks=c(1:11)) +
+  labs(x = 'Family Size') +
+  theme_few()
 ```
 
 ```{r Fill holes in data}
-factor_vars = c('Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked')
-for (var in factor_vars) {
+important_vars <- c('Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked')
+for (var in important_vars) {
   print(c(var, sum(is.na(train[[var]]))))
 }
+
+factor_vars <- c('PassengerId', 'Pclass', 'Sex', 'Embarked','Family_Size')
+
+train[factor_vars] <- lapply(train[factor_vars], function(x) as.factor(x))
+
+set.seed(0)
+
+mice_mod <- mice(train[, !names(train) %in% c('PassengerId', 'Name', 'Ticket', 'Cabin', 'Family','Surname','Survived')], method='rf')
+
+mice_output <- complete(mice_mod)
+
+hist(train$Age, freq=F)
+hist(mice_output$Age, freq=F)
+
+train$Age <- mice_output$Age
+sum(is.na(train$Age))
 ```
-We can see that Age has a significant number of missing data points.  While I'm okay losing one point for Fare, I would like to not lose all of those Age data points since it constitutes about a quarter of the training set.  
+We can see that Age has a significant number of missing data points.  While I'm okay losing one point for Fare, I would like to not lose all of those Age data points since it constitutes about a quarter of the training set.
+
 ```{r Remove unused columns}
 train <- train %>%
   mutate(Bin_Sex = as.integer(Sex == "female"))
