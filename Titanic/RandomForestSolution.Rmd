@@ -18,7 +18,7 @@ library(randomForest) #Random Forest Classification Model
 ```
 
 ```{r Load Data}
-setwd("C:/Users/Alexander/OneDrive/GitHub/kaggle-solutions/Titanic")
+setwd("~/GitHub/kaggle-solutions/Titanic")
 train <- read.csv("train.csv")
 test <- read.csv("test.csv")
 ```
@@ -59,6 +59,9 @@ ggplot(Age_Survival, aes(x = Age, y = survived)) +
 The last features I would like to look at are Pclass and Fare, which are probably colinear.   
 ```{r Survival by Fare}
 mosaicplot(table(train$Pclass, train$Survived))
+
+ggplot(train, aes(x = Fare, y = Pclass)) +
+  geom_count()
 
 ggplot(train, aes(x = Fare, y = Survived)) + 
   geom_count()
