@@ -14,11 +14,12 @@ library(ggplot2)
 
 library(mice) #Filling in missing data
 
-library(randomForest) #Random Forest Classification Model
+library(caret) #my preferred modeling package for Regression & Classification
 ```
 
 ```{r Load Data}
-setwd("~/GitHub/kaggle-solutions/Titanic")
+#setwd("~/GitHub/kaggle-solutions/Titanic") #For Ubuntu
+setwd("C:/Users/perus/OneDrive/GitHub/kaggle-solutions/Titanic") #For Laptop
 train <- read.csv("train.csv")
 test <- read.csv("test.csv")
 ```
@@ -74,45 +75,85 @@ train <- train %>%
   mutate(Family_Size = SibSp + Parch + 1)
 
 test <- test %>%
-  mutate(Family_Size = SibSp + Parch)
-
-ggplot(train, aes(x = Family_Size, fill = factor(Survived))) +
-  geom_bar(stat='count', position='dodge') +
-  scale_x_continuous(breaks=c(1:11)) +
-  labs(x = 'Family Size') +
-  theme_few()
+  mutate(Family_Size = SibSp + Parch + 1)
+# 
+# ggplot(train, aes(x = Family_Size, fill = factor(Survived))) +
+#   geom_bar(stat='count', position='dodge') +
+#   scale_x_continuous(breaks=c(1:11)) +
+#   labs(x = 'Family Size') +
+#   theme_few()
 ```
-
+We can see that Age has a significant number of missing data points.  While I'm okay losing one point for Fare, I would like to not lose all of those Age data points since it constitutes about a quarter of the training set.
 ```{r Fill holes in data}
 important_vars <- c('Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked')
 for (var in important_vars) {
   print(c(var, sum(is.na(train[[var]]))))
 }
 
-factor_vars <- c('PassengerId', 'Pclass', 'Sex', 'Embarked','Family_Size')
+factor_vars <- c('Survived', 'Pclass', 'Sex', 'Embarked','Family_Size')
 
 train[factor_vars] <- lapply(train[factor_vars], function(x) as.factor(x))
-
-set.seed(0)
-
-mice_mod <- mice(train[, !names(train) %in% c('PassengerId', 'Name', 'Ticket', 'Cabin', 'Family','Surname','Survived')], method='rf')
-
-mice_output <- complete(mice_mod)
-
-hist(train$Age, freq=F)
-hist(mice_output$Age, freq=F)
-
-train$Age <- mice_output$Age
-sum(is.na(train$Age))
 ```
-We can see that Age has a significant number of missing data points.  While I'm okay losing one point for Fare, I would like to not lose all of those Age data points since it constitutes about a quarter of the training set.
+After filling those gaps we can see that mice nicely conformed the added data to the distribution of the original data.  This is why I felt comfortable replacing the training data.  However as I continue to optimize this solution, this would be a particular area I would focus on to improve.
+
+This last piece is to transorm some of the categorical variables into numerical values.
 
 ```{r Remove unused columns}
 train <- train %>%
   mutate(Bin_Sex = as.integer(Sex == "female"))
+
+test <- test %>%
+  mutate(Bin_Sex = as.integer(Sex == "female"))
+
+train_proc <- select(train, -PassengerId, -Name, -Ticket, -Cabin, -Sex)
+test_proc <- select(test, Age)
+
+preProc <- preProcess(train_proc,
+                     method = "knnImpute",
+                     k = 5,
+                     knnSummary = mean,
+                     verbose = TRUE)
+
+train_trans <- predict(preProc, train_proc)
+
+train <- select(train, Survived, Embarked)
   
-  
-train <- select(train, Survived, Pclass, Bin_Sex, Age, SibSp, Parch, Fare, Embarked)
-  
-str(train)
+set.seed(182)
+inTraining <- createDataPartition(train_trans$Survived, times = 1, p = .75, list = FALSE)
+trainingSet <- train_trans[inTraining,]
+testSet <- train_trans[-inTraining,]
+```
+
+```{r Train some models}
+set.seed(1423)
+cvControl <- trainControl(#10-fold cross-validation repeated 10 times
+                          method = "repeatedcv",
+                          number = 10,
+                          repeats = 10)
+
+glmFit1 <- train(Survived ~ Bin_Sex + Pclass + Age, data = trainingSet,
+                 method = "glm",
+                 trControl = cvControl)
+
+glmFit1
+
+
+
+```
+
+```{r Predict against the Test Data}
+testPred <- predict(glmFit1, testSet)
+
+postResample(testPred, testSet$Survived)
+
+confusionMatrix(testPred, testSet$Survived)
+```
+
+```{r Write Solution to a File}
+test$Pclass <- factor(test$Pclass)
+prediction <- predict(glmFit1, test)
+
+solution <- data.frame(PassengerID = test$PassengerId, Survived = prediction)
+
+write.csv(solution, file = 'glm_Solution.csv', row.names = FALSE)
 ```
