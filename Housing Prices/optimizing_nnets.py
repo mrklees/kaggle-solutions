@@ -1,19 +1,17 @@
 import pandas as pd
 import numpy as np
 
-import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
-import keras as K
 from keras.layers import Input 
 from keras.layers.core import Dense, Dropout, Activation
 from keras.models import Model 
 
 from hyperopt import Trials, STATUS_OK, tpe
 from hyperas import optim
-from hyperas.distributions import choice, uniform, randint, conditional
+from hyperas.distributions import choice, uniform
 
 def preprocess_data():
     def encode_one_categorical_feature(column):
@@ -70,6 +68,11 @@ def keras_model(X_train, X_test, y_train, y_test):
 
     model.compile(loss="mse", optimizer={{choice(["adam", "RMSprop"])}})
 
+    model.fit(X_train, y_train,
+              batch_size=BATCH_SIZE, nb_epoch=NUM_EPOCHS,
+              verbose=2,
+              validation_data=(X_test, y_test))
+
     score = model.evaluate(X_test, y_test, verbose=0)
     return {'loss': -score, 'status': STATUS_OK, 'model': model}
 
@@ -84,3 +87,4 @@ if __name__ == '__main__':
     score = best_model.evaluate(X_test, y_test)
     print("\n The score on the test set is {:.2e}".format(score))
     print(best_run)
+    
